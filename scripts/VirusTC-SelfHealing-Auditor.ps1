@@ -117,6 +117,48 @@ $BodyJson = @{
 # Send payload securely to network storage node listener
 Invoke-RestMethod -Uri "https://hospital.local" -Method Post -Body $BodyJson -ContentType "application/json"
 
+# ============================================================================
+# SECURITY LAYER: SECURE STORAGE TOKEN EXTRACTION
+# ============================================================================
+Write-Output "Extracting secure API handshake credentials from Windows Vault..."
+
+# Add assembly pathways to interact with the native Windows Credential UI layers
+Add-Type -AssemblyName System.DirectoryServices.AccountManagement
+
+# Fetch the specific generic credential object matching your target identifier name
+\$TargetTarget = "VirusTC-API-Handshake"
+\$CredentialFetch = [Windows.Security.Credentials.PasswordVault, Windows.Security.Credentials, ContentType=WindowsRuntime]::new()
+
+try {
+    # Extract the encrypted password payload string securely from the local system vault
+    \$CredentialResult = CredentialFetch.Retrieve(TargetTarget, "SystemNode")
+    SecretToken = CredentialResult.Password
+    Write-Output "Successfully bound secure authentication token from DPAPI container."
+} catch {
+    # Fallback response context handling if a local technician deletes the token from the vault
+    \$DriftDetected = \(true\)CurrentStatus = "Drifted"
+    \(CurrentEventID = 40660\)RemediationLog += "[SECURITY FAULT] Handshake credential 'VirusTC-API-Handshake' not found inside Windows Credential Manager."
+    
+    # Set fallback token variable state to empty string to prevent successful payload generation leaks
+    \$SecretToken = ""
+}
+
+# ============================================================================
+# CENTRALIZED API DISPATCH (Uses the securely extracted token)
+# ============================================================================
+if (\$SecretToken -ne "") {
+    \$BodyJson = @{
+        AuthToken      = \$SecretToken  # Secure token referenced dynamically from memory
+        WorkstationID  = \$WorkstationID
+        GpuHardware    = "ASUS TUF RTX 5080" 
+        EventID        = \$CurrentEventID
+        Status         = \$CurrentStatus
+        LogDetails     = (\$RemediationLog -join " | ")
+    } | ConvertTo-Json
+
+    # Send payload securely to network storage node listener
+    Invoke-RestMethod -Uri "https://hospital.local" -Method Post -Body \$BodyJson -ContentType "application/json"
+}
 
 # ============================================================================
 # AUDIT SUBMISSION & POST-REPAIR REPORTING
