@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VirusTC Clinical Infrastructure Compliance Dashboard</title>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-success: #10b981;
+            --accent-warning: #f59e0b;
+            --accent-error: #ef4444;
+            --border-color: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            padding: 2rem;
+        }
+
+        header {
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 { font-size: 1.75rem; font-weight: 700; color: var(--text-main); }
+        .branding { color: var(--accent-success); font-weight: bold; }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .card-title { font-size: 0.875rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem; }
+        .card-value { font-size: 2.25rem; font-weight: bold; }
+        
+        .val-success { color: var(--accent-success); }
+        .val-warning { color: var(--accent-warning); }
+        .val-error { color: var(--accent-error); }
+
+        .table-section {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        h2 { font-size: 1.25rem; margin-bottom: 1rem; color: var(--text-main); }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background-color: var(--bg-primary);
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            padding: 0.75rem 1rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.875rem;
+            vertical-align: top;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .badge-compliant { background-color: rgba(16, 185, 129, 0.2); color: var(--accent-success); }
+        .badge-healed { background-color: rgba(245, 158, 11, 0.2); color: var(--accent-warning); }
+        .badge-drifted { background-color: rgba(239, 68, 68, 0.2); color: var(--accent-error); }
+
+        .log-box {
+            font-family: "Courier New", Courier, monospace;
+            background-color: var(--bg-primary);
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            max-width: 400px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div>
+            <h1><span class="branding">[VirusTC]</span> Imaging Workspace Fleet Monitor</h1>
+            <p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 0.25rem;">Real-time validation dashboard for ASUS TUF RTX 50 Endpoint Configurations</p>
+        </div>
+        <div style="text-align: right; font-size: 0.875rem; color: var(--text-muted);">
+            Last Fleet Scrape: <span id="timestamp" style="color: var(--text-main); font-weight: bold;">2026-06-24 21:59:00</span>
+        </div>
+    </header>
+
+    <!-- METRICS OVERVIEW PANELS -->
+    <div class="metrics-grid">
+        <div class="card">
+            <div class="card-title">Total Monitored Nodes</div>
+            <div class="card-value">42</div>
+        </div>
+        <div class="card">
+            <div class="card-title">Fleet Compliance Rate</div>
+            <div class="card-value val-success">95.2%</div>
+        </div>
+        <div class="card">
+            <div class="card-title">Auto-Healed (Today)</div>
+            <div class="card-value val-warning">2</div>
+        </div>
+        <div class="card">
+            <div class="card-title">Critical Offline / Unmanaged</div>
+            <div class="card-value val-error">0</div>
+        </div>
+    </div>
+
+    <!-- MAIN MONITORING DATAGRID -->
+    <div class="table-section">
+        <h2>Endpoint Fleet Status</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Workstation ID</th>
+                    <th>GPU Hardware</th>
+                    <th>Last Event Code</th>
+                    <th>Status</th>
+                    <th>Remediation / Drift Details Log</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <strong><td>DR-OFFICE-01</td></strong>
+                    <td>ASUS TUF RTX 5090</td>
+                    <td>-- (No Drift)</td>
+                    <td><span class="badge badge-compliant">Fully Compliant</span></td>
+                    <td><div class="log-box">All metrics within operational limits. Registry keys locked. QoS policy active.</div></td>
+                </tr>
+                <tr>
+                    <strong><td>DR-OFFICE-02</td></strong>
+                    <td>ASUS TUF RTX 5080</td>
+                    <td>Event 40661</td>
+                    <td><span class="badge badge-healed">Self-Healed</span></td>
+                    <td><div class="log-box">[REPAIR] Citrix Registry Key 'PreferAVC444' drifted to '0'. Enforced value '1'.<br>[REPAIR] Network QoS policy missing. Re-deployed successfully.</div></td>
+                </tr>
+                <tr>
+                    <strong><td>DR-OFFICE-03</td></strong>
+                    <td>ASUS TUF RTX 5080</td>
+                    <td>-- (No Drift)</td>
+                    <td><span class="badge badge-compliant">Fully Compliant</span></td>
+                    <td><div class="log-box">All metrics within operational limits. Registry keys locked. QoS policy active.</div></td>
+                </tr>
+                <tr>
+                    <strong><td>RAD-READ-04</td></strong>
+                    <td>ASUS TUF RTX 5090</td>
+                    <td>Event 40660</td>
+                    <td><span class="badge badge-drifted">Drift / Error</span></td>
+                    <td><div class="log-box" style="color: var(--accent-error);">[CRITICAL CRASH] NVIDIA-SMI utility missing. Local ASUS TUF graphics driver requires immediate IT reinstall.</div></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</body>
+</html>
