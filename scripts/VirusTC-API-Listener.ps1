@@ -43,6 +43,62 @@ while ($HttpListener.IsListening) {
             Continue
         }
 
+# ============================================================================
+# EXTENDED PROCESSING: REMEDIATION, DRIFT, AND DECOMMISSION HANDLER
+# ============================================================================
+WorkstationID = Payload.WorkstationID
+GpuHardware = Payload.GpuHardware
+EventID = Payload.EventID
+StatusStr = Payload.Status # Expecting: Compliant, Healed, Drifted, or Decommissioned
+LogDetails = Payload.LogDetails
+
+# Extract baseline file payload configuration states
+HtmlContent = Get-Content -Path DashboardPath -Raw
+
+if (\$StatusStr -eq "Decommissioned") {
+    Write-Output "[VirusTC API] Intercepted retirement signal from node: \$WorkstationID. Initializing auto-archive protocol..."
+
+    # Step A: Identify and slice out the active row profile element if it currently populates the datagrid
+    if (\$HtmlContent -match "<!-- ROW_\(WorkstationID -->.*?<!-- /ROW_\)WorkstationID -->") {
+        # Extract the raw row body context to move it into historical logging records
+        \$HtmlContent -match "<!-- ROW_\(WorkstationID -->(.*?)<!-- /ROW_\)WorkstationID -->" | Out-Null
+        ExtractedRowText = Matches[1]
+        
+        # Strip out styling markers and wrap inside a retro-fitted historical data trace row layout
+        \$ArchivedRowHtml = "<!-- ARCHIVE_WorkstationID --><tr><td><span style='color:var(--text-muted); text-decoration:line-through;'>WorkstationID</span></td><td>GpuHardware</td><td>(Get-Date -Format 'yyyy-MM-dd')</td><td><span class='badge' style='background-color:rgba(148,163,184,0.15); color:var(--text-muted);'>Archived</span></td><td><div class='log-box'>\(LogDetails</div></td></tr><!-- /ARCHIVE_\)WorkstationID -->"
+
+        # Step B: Remove the active row completely from the main operational overview segment
+        HtmlContent = HtmlContent -replace "<!-- ROW_\(WorkstationID -->.*?<!-- /ROW_\)WorkstationID -->", ""
+        
+        # Step C: Append the archived layout matrix inside the designated audit tracking section container
+        if (\$HtmlContent -match "<!-- ARCHIVE_TARGET_MARKER -->") {
+            HtmlContent = HtmlContent -replace "<!-- ARCHIVE_TARGET_MARKER -->", "<!-- ARCHIVE_TARGET_MARKER -->`n$ArchivedRowHtml"
+        }
+    }
+} else {
+    # --- STANDARD FLEET MONITORED UPDATE PATHWAY ---
+    switch ($StatusStr) {
+        "Compliant" { $Badge = "<span class='badge badge-compliant'>Fully Compliant</span>" }
+        "Healed"    { $Badge = "<span class='badge badge-healed'>Self-Healed</span>" }
+        "Drifted"   { $Badge = "<span class='badge badge-drifted'>Drift / Error</span>" }
+    }
+
+    $NewRowHtml = "<tr><td><strong>$WorkstationID</strong></td><td>$GpuHardware</td><td>Event $EventID</td><td>$Badge</td><td><div class='log-box'>$LogDetails</div></td></tr>"
+    
+    if ($HtmlContent -match "<!-- ROW_$WorkstationID -->.*?<!-- /ROW_$WorkstationID -->") {
+        $HtmlContent = $HtmlContent -replace "<!-- ROW_$WorkstationID -->.*?<!-- /ROW_$WorkstationID -->", "<!-- ROW_$WorkstationID -->$NewRowHtml<!-- /ROW_$WorkstationID -->"
+    } else {
+        $HtmlContent = $HtmlContent -replace "<tbody>", "<tbody>`n<!-- ROW_\$WorkstationID -->\(NewRowHtml<!-- /ROW_\)WorkstationID -->"
+    }
+}
+
+# Dynamic timestamp compilation pass
+\$CurrentTimeStr = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+HtmlContent = HtmlContent -replace '<span id="timestamp".*?>(.*?)</span>', "<span id=`"timestamp`" style=`"color: var(--text-main); font-weight: bold;`">\$CurrentTimeStr</span>"
+
+# Save update states to the local IIS production document root folder path
+HtmlContent | Out-File -FilePath DashboardPath -Encoding utf8 -Force
+
         # --- PROCESS ENTRY & REWRITE HTML GRID LAYER ---
         $WorkstationID = $Payload.WorkstationID
         $GpuHardware   = $Payload.GpuHardware
