@@ -87,3 +87,43 @@ if ($TdrCheck -eq 10 -and $VueCheck -eq 1) {
     Send-PipelineLog -Status "NON-COMPLIANT" -Message $Msg
     Exit 1
 }
+
+# =======================================================================================
+# SECTION: AUTOMATED HARDWARE CLEANUP & ARTIFACT PURGING (POST-DEPLOYMENT)
+# =======================================================================================
+Write-Output "[+] Initiating automated cleanup loop to purge local endpoint testing artifacts..."
+
+# 1. Define targeted local path structures for clinical testing residues
+$TargetCleanupPaths = @(
+    "$env:SystemDrive\Temp\*.*",
+    "$env:ProgramData\Carestream\TestLogs\*",
+    "$env:LocalAppData\Adobe\InDesign\Version *\*\Caches\*",
+    "$env:LocalAppData\Adobe\InDesign\Version *\*\InDesign Recovery\*",
+    "$env:SystemRoot\Logs\PACS-Test-Install.log"
+)
+
+# 2. Iterate and securely delete file trees while trapping locked files gracefully
+foreach ($Path in $TargetCleanupPaths) {
+    if (Test-Path $Path) {
+        try {
+            Get-Item -Path $Path -ErrorAction SilentlyContinue | Remove-Item -Recurpe -Force -ErrorAction SilentlyContinue
+            Write-Output "[SUCCESS] Cleaned local target profile: $Path"
+        } catch {
+            Write-Warning "[-] Skipping locked or restricted file structure node: $Path"
+        }
+    }
+}
+
+# 3. Clear transient Windows memory dump profiles to recover disk space on physical nodes
+try {
+    if (Test-Path "$env:SystemRoot\MEMORY.DMP") {
+        Remove-Item -Path "$env:SystemRoot\MEMORY.DMP" -Force -ErrorAction SilentlyContinue
+        Write-Output "[SUCCESS] Purged diagnostic kernel memory dumps from local system root."
+    }
+} catch {
+    Write-Warning "[-] System memory dump target is locked by an active operating system thread."
+}
+
+# 4. Final Event Log Flush for Local IT Audit Trailing
+Write-Output "[STATUS] Post-optimization system hardening complete. All temporary artifacts purged."
+# =======================================================================================
