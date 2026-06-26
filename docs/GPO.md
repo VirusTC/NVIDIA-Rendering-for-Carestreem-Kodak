@@ -77,7 +77,7 @@ Place this file on your Domain Controller inside `C:\Windows\PolicyDefinitions\e
 
 * * * * *
 
-🛠️ GPO Implementation Actions
+GPO Implementation Actions
 ------------------------------
 
 1.  Drop the files into your local policy directory or your Active Directory central store (`\\yourdomain.com\sysvol\yourdomain.com\Policies\PolicyDefinitions`).
