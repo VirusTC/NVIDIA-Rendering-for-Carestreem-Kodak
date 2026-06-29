@@ -42,12 +42,58 @@ Optimizes client machines that lack direct physical tethers to X-ray machines. T
 * **Hardware Decoding Offload:** Forces the endpoint NVDEC hardware chip to decompress incoming Citrix HDX bitstreams, preserving 4:4:4 Chroma Subsampling for crisp grayscale transitions.
 * **Industrial-Grade Reliability:** Leverages over-engineered hardware properties (military-grade 20K capacitors and dual ball bearing fans) to maintain a zero-throttling display state.
 
+## 🎛️ Carestream VuePACS & DryView 5950 Calibration Matrix
+
+To prevent visual drift between the on-screen NVIDIA hardware acceleration rendering pipeline and physical print media outputs, clinical networks must implement rule-based media sorting profiles.
+
+### 1. DICOM Routing Rules & Tray Allocation
+Configure the Carestream VuePACS Print Client Engine (SOP Class UID `1.2.840.10008.5.1.1.18`) to separate output workflows:
+* **Tray 1 (Baseline)**: Routes standard print payloads to **Blue Base DryView Laser Imaging Film (DVB)**.
+* **Tray 2 (Premium)**: Routes insurance/patient-paid visual upgrades to **Clear Base Film** cartridges for maximum back-lit density on clinical light-boards.
+* **Automation Hook**: Sorting rules trigger dynamically when matching the custom billing macro identifier string: `Premium_Clear_Sheet`.
+
+### 2. FDA-Compliant Adobe Look-Up Table (LUT) Calibration
+To preserve Adobe-layered vector transparency profiles and match Grayscale Standard Display Function (GSDF) limits:
+* **Clear Base Profile**: Force a rigid minimum density limit of `Dmin = 0.20` to prevent background clouding under intense light-board illumination.
+* **Blue Base Profile**: Force a rigid maximum density limit of `Dmax = 3.20` to ensure deep, clean black clipping boundaries.
+* **Interpolation**: Enforce the `Linear Interpolation Curve` inside the DryView Web Portal console.
+
+---
+
+## 🚦 End-to-End Infrastructure Deployment Sequence (Updated)
+
+The updated infrastructure deployment progression must follow this strict sequence:
+
+[1. Hypervisor / Network Setup]
+
+➔ [2. Master PVS/MCS Image Build (Citrix-TUF-Endpoint-Opt.ps1)]
+
+➔ [3. Standalone Hardware Provisioning (Local-TUF-Endpoint-Opt.ps1)]
+
+➔ [4. API Listener Node Deploy]
+
+➔ [5. Active Directory GPO & WMI Target Configuration]
+
 ---
 
 ## 🚦 End-to-End Infrastructure Deployment Sequence
 
 To implement this optimization framework within a production hospital network, engineers should execute the setup steps in the following order:
 [1. Hypervisor / Network Setup] ➔ [2. Master PVS/MCS Image Build] ➔ [3. API Listener Node Deploy] ➔ [4. AD GPO Configuration]
+
+### Step 3: Standalone Hardware Provisioning (Non-Citrix Local Endpoints)
+For physical workspace environments equipped with dedicated **ASUS TUF Gaming GeForce RTX 50 Series** hardware components:
+
+1. Execute `scripts/Local-TUF-Endpoint-Opt.ps1` locally or via startup automation.
+2. This script enforces high-performance power configurations, sets an FDA-stabilized Windows TdrDelay (`10 seconds`), pins the Carestream Vue app layer exclusively onto local NVDEC hardware bitstream decoders, and executes an automated post-deployment cleanup cycle to clear scratch files and memory logs.
+3. Hook the REST function to point payloads directly back to your secure `VirusTC-API-Listener.ps1` pipeline over port `8443`.
+
+### Step 5: Active Directory GPO & WMI Target Configuration
+1. Group Policy Objects deploying local execution scripts must link the following scoping filter to prevent execution on unapproved virtual endpoints:
+   ```sql
+   SELECT * FROM Win32_VideoController WHERE Name LIKE "%NVIDIA%" OR Name LIKE "%ASUS%"
+   ```
+2. Import `NvidiaCarestreamStabilization.admx` into your Active Directory Central Store to enforce state baseline evaluations over GPO intervals.
 
 ### Step 1: Hypervisor and Network Core Configuration
 1. Open your datacenter core and edge switches. Enable **Jumbo Frames** with an MTU ceiling of **9000 bytes** across all imaging VLANs.
